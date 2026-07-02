@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "9dc453f0-f4fb-4b78-bcea-2237a08fc78f"
+      }
+    },
+    "ios": {
+      "bundleIdentifier": "com.cloudzs.snapngraspapi",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}

@@ -1,0 +1,518 @@
+openapi: 3.0.3
+info:
+  title: SnapNGrasp Authentication API
+  description: |
+    Complete authentication & identity layer for SnapNGrasp AI study app.
+    
+    ## Features
+    - Multi-provider OAuth (Email, Google, Apple)
+    - JWT token validation
+    - Profile management with RLS
+    - Learning style onboarding
+    - Admin role management
+    - Canvas LMS integration prep
+    
+    ## Authentication
+    Most endpoints require a Bearer token in the Authorization header:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+  version: 1.0.0
+  contact:
+    name: SnapNGrasp API Support
+    email: support@snapngrasp.com
+
+servers:
+  - url: http://localhost:8080/api
+    description: Development server
+  - url: https://api.snapngrasp.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication & session management
+  - name: Onboarding
+    description: First-time user onboarding flow
+  - name: Health
+    description: API health & status
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Returns API health status and version
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: 1.0.0
+
+  /auth/email/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Email signup
+      description: Create a new user account with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                  example: SecurePass123!
+                display_name:
+                  type: string
+                  example: John Doe
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        format: uuid
+                      email:
+                        type: string
+                        format: email
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/email/login:
+    post:
+      tags:
+        - Authentication
+      summary: Email login
+      description: Login with email and password to receive access tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: user@example.com
+                password:
+                  type: string
+                  format: password
+                  example: SecurePass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      access_token:
+                        type: string
+                        description: JWT access token (short-lived)
+                      refresh_token:
+                        type: string
+                        description: Refresh token for obtaining new access tokens
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: string
+                            format: uuid
+                          email:
+                            type: string
+                            format: email
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/validate:
+    get:
+      tags:
+        - Authentication
+      summary: Validate token
+      description: Verify bearer token and return user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: string
+                        format: uuid
+                      profile:
+                        $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout (device)
+      description: Device sign-out. Client should clear local session after this call.
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      ok:
+                        type: boolean
+                        example: true
+
+  /auth/logout-all:
+    post:
+      tags:
+        - Authentication
+      summary: Logout all devices
+      description: Revoke all refresh tokens for a user (admin or self)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+              properties:
+                user_id:
+                  type: string
+                  format: uuid
+                  description: User ID to revoke tokens for
+      responses:
+        '200':
+          description: All sessions revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      ok:
+                        type: boolean
+                        example: true
+                      message:
+                        type: string
+                        example: All sessions revoked
+        '403':
+          description: Forbidden (not admin or not self)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/oauth/url:
+    get:
+      tags:
+        - Authentication
+      summary: Get OAuth URL
+      description: Generate OAuth provider URL for Google or Apple sign-in
+      parameters:
+        - name: provider
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [google, apple]
+          description: OAuth provider
+        - name: redirect_to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+          description: Callback URL after OAuth flow
+      responses:
+        '200':
+          description: OAuth URL generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        format: uri
+                        example: https://accounts.google.com/o/oauth2/v2/auth?...
+                      provider:
+                        type: string
+                        example: google
+        '400':
+          description: Invalid provider
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /onboarding/complete:
+    post:
+      tags:
+        - Onboarding
+      summary: Complete onboarding
+      description: Set learning style and mark onboarding as completed
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - learning_style
+              properties:
+                learning_style:
+                  type: string
+                  enum: [visual, auditory, interactive]
+                  description: Preferred learning style
+                display_name:
+                  type: string
+                  description: Optional display name update
+      responses:
+        '200':
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      profile:
+                        $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: Invalid learning style
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /onboarding/set-style:
+    post:
+      tags:
+        - Onboarding
+      summary: Update learning style
+      description: Change learning style after onboarding
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - learning_style
+              properties:
+                learning_style:
+                  type: string
+                  enum: [visual, auditory, interactive]
+                  description: New learning style
+      responses:
+        '200':
+          description: Learning style updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  data:
+                    type: object
+                    properties:
+                      profile:
+                        type: object
+                        properties:
+                          user_id:
+                            type: string
+                            format: uuid
+                          learning_style:
+                            type: string
+                            enum: [visual, auditory, interactive]
+        '400':
+          description: Invalid learning style
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token from login/signup
+
+  schemas:
+    UserProfile:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+          nullable: true
+        avatar_url:
+          type: string
+          format: uri
+          nullable: true
+        role:
+          type: string
+          enum: [user, admin]
+          default: user
+        learning_style:
+          type: string
+          enum: [visual, auditory, interactive]
+          nullable: true
+        onboarding_completed:
+          type: boolean
+          default: false
+        last_login_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        message:
+          type: string
+          example: Error description
+
+  responses:
+    Unauthorized:
+      description: Authentication required or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: error
+            message: Authentication required
+
+    Forbidden:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: error
+            message: Forbidden
+
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            status: error
+            message: Invalid request
+
+security:
+  - bearerAuth: []

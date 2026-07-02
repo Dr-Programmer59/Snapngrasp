@@ -1,0 +1,41 @@
+{
+  "cli": {
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "development",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.snapngrasp.com",
+        "EXPO_PUBLIC_BACKEND_URL": "https://api.snapngrasp.com",
+        "EXPO_PUBLIC_AGENT_MODE": "private",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_VTSOFnyUljxLaKVQuiOOCgTpoBe"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.snapngrasp.com",
+        "EXPO_PUBLIC_BACKEND_URL": "https://api.snapngrasp.com",
+        "EXPO_PUBLIC_AGENT_MODE": "private",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_VTSOFnyUljxLaKVQuiOOCgTpoBe"
+      }
+    },
+    "production": {
+      "environment": "production",
+      "credentialsSource": "remote",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.snapngrasp.com",
+        "EXPO_PUBLIC_BACKEND_URL": "https://api.snapngrasp.com",
+        "EXPO_PUBLIC_AGENT_MODE": "private",
+        "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_VTSOFnyUljxLaKVQuiOOCgTpoBe"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

@@ -1,0 +1,512 @@
+{
+  "info": {
+    "name": "SnapNGrasp Auth API",
+    "description": "Complete authentication & onboarding API for SnapNGrasp",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "snapngrasp"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Email Signup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('user_id', response.data.user_id);",
+                  "    pm.test('Status is 201', () => pm.response.to.have.status(201));",
+                  "    pm.test('User ID returned', () => pm.expect(response.data.user_id).to.exist);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"display_name\": \"Test User\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/email/signup",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "email", "signup"]
+            },
+            "description": "Create a new user account with email and password"
+          },
+          "response": []
+        },
+        {
+          "name": "Email Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', response.data.access_token);",
+                  "    pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "    pm.test('Access token returned', () => pm.expect(response.data.access_token).to.exist);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/email/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "email", "login"]
+            },
+            "description": "Login with email and password to get access token"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Profile returned', () => {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.profile).to.exist;",
+                  "    pm.expect(response.data.profile.email).to.exist;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/validate",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "validate"]
+            },
+            "description": "Verify bearer token and return user profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate Token (Invalid)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "invalid_token_here",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/validate",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "validate"]
+            },
+            "description": "Test with invalid token (should return 401)"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('ok is true', () => {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.ok).to.be.true;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Device sign-out (client should clear local tokens)"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout All",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/logout-all",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout-all"]
+            },
+            "description": "Revoke all refresh tokens (admin or self)"
+          },
+          "response": []
+        },
+        {
+          "name": "Get OAuth URL (Google)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('URL returned', () => {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.url).to.exist;",
+                  "    pm.expect(response.data.url).to.include('google');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/oauth/url?provider=google&redirect_to=http://localhost:3000/callback",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "oauth", "url"],
+              "query": [
+                {
+                  "key": "provider",
+                  "value": "google"
+                },
+                {
+                  "key": "redirect_to",
+                  "value": "http://localhost:3000/callback"
+                }
+              ]
+            },
+            "description": "Get OAuth URL for Google sign-in"
+          },
+          "response": []
+        },
+        {
+          "name": "Get OAuth URL (Apple)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/oauth/url?provider=apple&redirect_to=http://localhost:3000/callback",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "oauth", "url"],
+              "query": [
+                {
+                  "key": "provider",
+                  "value": "apple"
+                },
+                {
+                  "key": "redirect_to",
+                  "value": "http://localhost:3000/callback"
+                }
+              ]
+            },
+            "description": "Get OAuth URL for Apple sign-in"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Onboarding",
+      "item": [
+        {
+          "name": "Complete Onboarding",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Onboarding completed', () => {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.profile.onboarding_completed).to.be.true;",
+                  "    pm.expect(response.data.profile.learning_style).to.equal('visual');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"learning_style\": \"visual\",\n  \"display_name\": \"Updated Name\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/onboarding/complete",
+              "host": ["{{base_url}}"],
+              "path": ["onboarding", "complete"]
+            },
+            "description": "Complete onboarding with learning style selection"
+          },
+          "response": []
+        },
+        {
+          "name": "Set Learning Style",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Learning style updated', () => {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.data.profile.learning_style).to.equal('auditory');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"learning_style\": \"auditory\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/onboarding/set-style",
+              "host": ["{{base_url}}"],
+              "path": ["onboarding", "set-style"]
+            },
+            "description": "Update learning style after onboarding"
+          },
+          "response": []
+        },
+        {
+          "name": "Set Learning Style (Invalid)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"learning_style\": \"invalid_style\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/onboarding/set-style",
+              "host": ["{{base_url}}"],
+              "path": ["onboarding", "set-style"]
+            },
+            "description": "Test with invalid learning style (should return 400)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is ok', () => {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.equal('ok');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "API health check endpoint"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
